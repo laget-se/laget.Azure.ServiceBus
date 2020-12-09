@@ -1,6 +1,6 @@
 ﻿using Microsoft.Azure.ServiceBus;
 
-namespace laget.Azure.Queue
+namespace laget.Azure.ServiceBus.Queue
 {
     public class QueueOptions
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Azure.ServiceBus;
 
-namespace laget.Azure.Topic
+namespace laget.Azure.ServiceBus.Topic
 {
     public class TopicOptions
     {

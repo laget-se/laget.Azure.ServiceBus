@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
 
-namespace laget.Azure.Queue
+namespace laget.Azure.ServiceBus.Queue
 {
     public interface IQueueReceiver
     {

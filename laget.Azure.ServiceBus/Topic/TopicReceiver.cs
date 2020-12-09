@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 
-namespace laget.Azure.Topic
+namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicReceiver
     {

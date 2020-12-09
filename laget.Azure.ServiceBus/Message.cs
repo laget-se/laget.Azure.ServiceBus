@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace laget.Azure
+namespace laget.Azure.ServiceBus
 {
     public interface IMessage
     {
