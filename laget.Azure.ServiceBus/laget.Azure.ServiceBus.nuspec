@@ -7,7 +7,7 @@
     <authors>gonace,laget.se</authors>
     <owners>laget.se</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azure Service Bus .NET Standard client library that focuses on queues & topics. For more information about Service Bus...</description>
+    <description>A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azure Service Bus .NET Standard client library that focuses on queues &amp; topics. For more information about Service Bus...</description>
     <summary></summary>
     <license type="expression">Apache-2.0</license>
     <projectUrl>https://laget.se</projectUrl>
