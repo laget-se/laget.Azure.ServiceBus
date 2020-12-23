@@ -1,6 +1,8 @@
 # laget.Azure.ServiceBus
 A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azure Service Bus .NET Standard client library that focuses on queues & topics. For more information about Service Bus...
 
+![Nuget](https://img.shields.io/nuget/v/laget.Azure.ServiceBus)
+
 ## Usage
 ```c#
 public class SomeClass : IHostedService
