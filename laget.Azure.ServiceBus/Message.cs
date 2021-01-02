@@ -8,6 +8,7 @@ namespace laget.Azure.ServiceBus
         string Id { get; set; }
         string Type { get; set; }
         string Category { get; set; }
+
         DateTime CreatedAt { get; }
         Microsoft.Azure.ServiceBus.Message Source { get; set; }
 
@@ -18,11 +19,12 @@ namespace laget.Azure.ServiceBus
     public class Message : IMessage
     {
         [JsonProperty("id")]
-        public string Id { get; set; }
+        public virtual string Id { get; set; }
         [JsonProperty("type")]
-        public string Type { get; set; }
+        public virtual string Type { get; set; }
         [JsonProperty("category")]
-        public string Category { get; set; }
+        public virtual string Category { get; set; }
+
         [JsonProperty("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [JsonProperty("source")]
