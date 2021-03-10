@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace laget.Azure.ServiceBus
 {
@@ -30,6 +31,11 @@ namespace laget.Azure.ServiceBus
         [JsonProperty("source")]
         public virtual Microsoft.Azure.ServiceBus.Message Source { get; set; }
 
-        public virtual string Serialize() => JsonConvert.SerializeObject(this);
+        public virtual string Serialize() =>
+            JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Formatting = Formatting.Indented
+            });
     }
 }
