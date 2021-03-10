@@ -28,8 +28,8 @@ namespace laget.Azure.ServiceBus
         [JsonProperty("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [JsonProperty("source")]
-        public Microsoft.Azure.ServiceBus.Message Source { get; set; }
+        public virtual Microsoft.Azure.ServiceBus.Message Source { get; set; }
 
-        public string Serialize() => JsonConvert.SerializeObject(this);
+        public virtual string Serialize() => JsonConvert.SerializeObject(this);
     }
 }
