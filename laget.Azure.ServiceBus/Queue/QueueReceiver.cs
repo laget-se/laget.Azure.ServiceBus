@@ -12,7 +12,7 @@ namespace laget.Azure.ServiceBus.Queue
 
     public class QueueReceiver : IQueueReceiver
     {
-        readonly IQueueClient _client;
+        private readonly IQueueClient _client;
 
         public QueueReceiver(string connectionString, QueueOptions options)
         {

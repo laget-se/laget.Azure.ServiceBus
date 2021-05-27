@@ -13,7 +13,7 @@ namespace laget.Azure.ServiceBus.Topic
 
     public class TopicReceiver : ITopicReceiver
     {
-        readonly IMessageReceiver _client;
+        private readonly IMessageReceiver _client;
 
         public TopicReceiver(string connectionString, TopicOptions options)
         {
