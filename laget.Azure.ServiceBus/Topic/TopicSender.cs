@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
+using laget.Azure.ServiceBus.Extensions;
 
 namespace laget.Azure.ServiceBus.Topic
 {
@@ -22,13 +24,22 @@ namespace laget.Azure.ServiceBus.Topic
             _client = new TopicClient(connectionString, options.TopicName, options.RetryPolicy);
         }
 
-
         public async Task SendAsync(IMessage message)
         {
             var json = message.Serialize();
             var bytes = Encoding.UTF8.GetBytes(json);
 
             await _client.SendAsync(new Microsoft.Azure.ServiceBus.Message(bytes));
+        }
+
+        public async Task SendAsync(IList<IMessage> messageList)
+        {
+            var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
+
+            foreach (var m in messageList)
+                sendList.Add(m.ConvertToServicebusMessage());
+
+            await _client.SendAsync(sendList);
         }
 
         public async Task ScheduleAsync(IMessage message, DateTimeOffset offset)
@@ -44,6 +55,16 @@ namespace laget.Azure.ServiceBus.Topic
             var bytes = Encoding.UTF8.GetBytes(json);
 
             await _client.SendAsync(new Microsoft.Azure.ServiceBus.Message(bytes));
+        }
+
+        public async Task SendAsync(IList<string> messageList)
+        {
+            var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
+
+            foreach (var m in messageList)
+                sendList.Add(new Microsoft.Azure.ServiceBus.Message(Encoding.UTF8.GetBytes(m)));
+
+            await _client.SendAsync(sendList);
         }
 
         public async Task ScheduleAsync(string json, DateTimeOffset offset)

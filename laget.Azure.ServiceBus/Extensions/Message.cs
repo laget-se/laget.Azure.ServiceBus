@@ -18,5 +18,13 @@ namespace laget.Azure.ServiceBus.Extensions
 
             return entity;
         }
+
+        public static Microsoft.Azure.ServiceBus.Message ConvertToServicebusMessage(this IMessage message)
+        {
+            var json = message.Serialize();
+            var bytes = Encoding.UTF8.GetBytes(json);
+
+            return new Microsoft.Azure.ServiceBus.Message(bytes);
+        }
     }
 }
