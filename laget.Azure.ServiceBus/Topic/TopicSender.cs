@@ -10,8 +10,10 @@ namespace laget.Azure.ServiceBus.Topic
     public interface ITopicSender
     {
         Task SendAsync(IMessage message);
+        Task SendAsync(IEnumerable<IMessage> messageList);
         Task ScheduleAsync(IMessage message, DateTimeOffset offset);
         Task SendAsync(string json);
+        Task SendAsync(IEnumerable<string> messageList);
         Task ScheduleAsync(string json, DateTimeOffset offset);
     }
 
@@ -29,7 +31,7 @@ namespace laget.Azure.ServiceBus.Topic
             await _client.SendAsync(message.ToServiceBusMessage());
         }
 
-        public async Task SendAsync(IList<IMessage> messageList)
+        public async Task SendAsync(IEnumerable<IMessage> messageList)
         {
             var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
 
@@ -51,7 +53,7 @@ namespace laget.Azure.ServiceBus.Topic
             await _client.SendAsync(new Microsoft.Azure.ServiceBus.Message(bytes));
         }
 
-        public async Task SendAsync(IList<string> messageList)
+        public async Task SendAsync(IEnumerable<string> messageList)
         {
             var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
 
