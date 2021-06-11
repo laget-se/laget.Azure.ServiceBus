@@ -50,7 +50,7 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
                 Type = "UserType"
             };
 
-            var servicebusMessage = userMessage.ToServicebusMessage();
+            var servicebusMessage = userMessage.ToServiceBusMessage();
             var model = servicebusMessage.Deserialize<Models.User>();
         
             Assert.Equal("Jane Doe", model.Name);
