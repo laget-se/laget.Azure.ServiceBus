@@ -1,7 +1,7 @@
-﻿using System;
+﻿using laget.Azure.ServiceBus.Extensions;
+using System;
 using System.Reflection;
 using System.Text;
-using laget.Azure.ServiceBus.Extensions;
 using Xunit;
 
 namespace laget.Azure.ServiceBus.Tests.Extensions
@@ -13,7 +13,7 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
         public MessageTests()
         {
             // One-time setup
-            // Only use this setup for testing, do not attempt to set systemproperties in production
+            // Only use this setup for testing, do not attempt to set system properties in production
             _servicebusMessage = new Microsoft.Azure.ServiceBus.Message { MessageId = "SomeCoolId1" };
 
             var systemProperties = new Microsoft.Azure.ServiceBus.Message.SystemPropertiesCollection();
@@ -21,10 +21,10 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
 
             var sequenceNumber = 1;
             var enqueueTime = DateTime.Now.AddSeconds(5);
-            systemProperties.GetType().InvokeMember("EnqueuedTimeUtc", bindings, Type.DefaultBinder, systemProperties, new object[] { enqueueTime } );
+            systemProperties.GetType().InvokeMember("EnqueuedTimeUtc", bindings, Type.DefaultBinder, systemProperties, new object[] { enqueueTime });
             systemProperties.GetType().InvokeMember("SequenceNumber", bindings, Type.DefaultBinder, systemProperties, new object[] { sequenceNumber });
 
-            // Set mocked-up systemprorperties for current message
+            // Set mocked-up system properties for current message
             bindings = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.SetProperty;
             _servicebusMessage.GetType().InvokeMember("SystemProperties", bindings, Type.DefaultBinder, _servicebusMessage, new object[] { systemProperties });
         }
@@ -50,9 +50,9 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
                 Type = "UserType"
             };
 
-            var servicebusMessage = userMessage.ToServiceBusMessage();
+            var servicebusMessage = new Microsoft.Azure.ServiceBus.Message(userMessage.GetBytes());
             var model = servicebusMessage.Deserialize<Models.User>();
-        
+
             Assert.Equal("Jane Doe", model.Name);
         }
     }
