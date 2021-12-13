@@ -142,5 +142,59 @@ namespace laget.Azure.ServiceBus.Tests.Topic
                 await simulateMessageReceived(message, new CancellationToken());
             });
         }
+
+        [Fact]
+        public void ShouldNotDeleteBlobIfHandlerThrowsException()
+        {
+            var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+            var message = new Message();
+            message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
+
+            Func<Message, CancellationToken, Task> simulateMessageReceived = null;
+            var messageReceiver = new Mock<IMessageReceiver>();
+            messageReceiver
+                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
+                .Callback((Func<Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                {
+                    simulateMessageReceived = callback;
+                })
+                .Verifiable();
+
+            var blobResponse = new Mock<Response<BlobDownloadResult>>();
+            blobResponse
+                .Setup(br => br.Value)
+                .Returns(BlobsModelFactory.BlobDownloadResult(new BinaryData(body)))
+                .Verifiable();
+
+            var blobClient = new Mock<BlobClient>();
+            blobClient
+                .Setup(bc => bc.DownloadContentAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(blobResponse.Object))
+                .Verifiable();
+
+            var blobContainerClient = new Mock<BlobContainerClient>();
+            blobContainerClient
+                .Setup(bc => bc.GetBlobClient(It.IsAny<string>()))
+                .Returns(blobClient.Object)
+                .Verifiable();
+
+            var sut = new TopicReceiver(messageReceiver.Object, "topic", blobContainerClient.Object);
+
+            sut.Register((m, _) => throw new Exception(), _ => Task.CompletedTask);
+
+            messageReceiver.Verify();
+            Assert.NotNull(simulateMessageReceived);
+
+            simulateMessageReceived(message, new CancellationToken());
+
+            blobResponse.Verify();
+            blobResponse.VerifyNoOtherCalls();
+            blobClient.Verify();
+            blobClient.VerifyNoOtherCalls();
+            blobContainerClient.Verify();
+            blobContainerClient.Verify(b => b.CreateIfNotExists(It.IsAny<PublicAccessType>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobContainerEncryptionScopeOptions>(), It.IsAny<CancellationToken>()));
+            blobContainerClient.VerifyNoOtherCalls();
+            messageReceiver.VerifyNoOtherCalls();
+        }
     }
 }
