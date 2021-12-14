@@ -7,11 +7,9 @@ using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
 {
-    using Message = Microsoft.Azure.ServiceBus.Message;
-
     public interface ITopicReceiver
     {
-        void Register(Func<Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null);
+        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null);
     }
 
     public class TopicReceiver : ITopicReceiver
@@ -20,14 +18,14 @@ namespace laget.Azure.ServiceBus.Topic
         private readonly BlobContainerClient _blobContainerClient;
         private readonly string _topic;
 
-        public TopicReceiver(string connectionString, TopicOptions options) :
-            this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
+        public TopicReceiver(string connectionString, TopicOptions options)
+            : this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
                  options.TopicName,
                 null)
         { }
 
-        public TopicReceiver(string connectionString, TopicOptions options, string blobConnectionString, string blobContainer) :
-            this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
+        public TopicReceiver(string connectionString, TopicOptions options, string blobConnectionString, string blobContainer)
+            : this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
                  options.TopicName,
                  new BlobContainerClient(blobConnectionString, blobContainer))
         { }
@@ -41,7 +39,7 @@ namespace laget.Azure.ServiceBus.Topic
         }
 
 
-        public void Register(Func<Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null)
+        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null)
         {
             if (handlerOptions == null)
                 handlerOptions = new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = 10, AutoComplete = true };
@@ -49,7 +47,7 @@ namespace laget.Azure.ServiceBus.Topic
             _client.RegisterMessageHandler(HandlerWrapper(callback), handlerOptions);
         }
 
-        private Func<Message, CancellationToken, Task> HandlerWrapper(Func<Message, CancellationToken, Task> callback)
+        private Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> HandlerWrapper(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback)
         {
             return async (message, ct) =>
             {

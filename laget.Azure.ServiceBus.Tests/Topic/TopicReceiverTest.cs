@@ -13,20 +13,19 @@ using Xunit;
 
 namespace laget.Azure.ServiceBus.Tests.Topic
 {
-    using Message = Microsoft.Azure.ServiceBus.Message;
     public class TopicReceiverTest
     {
         [Fact]
         public void ShouldGetPayloadFromMessageBodyIfNoHeaderPresent()
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-            var message = new Message(body);
+            var message = new Microsoft.Azure.ServiceBus.Message(body);
 
-            Func<Message, CancellationToken, Task> simulateMessageReceived = null;
+            Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
             messageReceiver
-                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
-                .Callback((Func<Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
+                .Callback((Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
                 {
                     simulateMessageReceived = callback;
                 })
@@ -34,7 +33,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             var blobContainerClient = new Mock<BlobContainerClient>();
             var sut = new TopicReceiver(messageReceiver.Object, "topic", blobContainerClient.Object);
 
-            Message receivedMessage = null;
+            Microsoft.Azure.ServiceBus.Message receivedMessage = null;
             sut.Register((m, _) =>
             {
                 receivedMessage = m;
@@ -57,14 +56,14 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public void ShouldGetPayloadFromBlobStorageIfHeaderPresent()
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-            var message = new Message();
+            var message = new Microsoft.Azure.ServiceBus.Message();
             message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
-            Func<Message, CancellationToken, Task> simulateMessageReceived = null;
+            Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
             messageReceiver
-                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
-                .Callback((Func<Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
+                .Callback((Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
                 {
                     simulateMessageReceived = callback;
                 })
@@ -90,7 +89,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
 
             var sut = new TopicReceiver(messageReceiver.Object, "topic", blobContainerClient.Object);
 
-            Message receivedMessage = null;
+            Microsoft.Azure.ServiceBus.Message receivedMessage = null;
             sut.Register((m, _) =>
             {
                 receivedMessage = m;
@@ -118,14 +117,14 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         [Fact]
         public void ShouldThrowExceptionWhenReceivingMessageWithBlobHeaderWithoutBlobStorage()
         {
-            var message = new Message();
+            var message = new Microsoft.Azure.ServiceBus.Message();
             message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
-            Func<Message, CancellationToken, Task> simulateMessageReceived = null;
+            Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
             messageReceiver
-                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
-                .Callback((Func<Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
+                .Callback((Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
                 {
                     simulateMessageReceived = callback;
                 })
@@ -147,14 +146,14 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public void ShouldNotDeleteBlobIfHandlerThrowsException()
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-            var message = new Message();
+            var message = new Microsoft.Azure.ServiceBus.Message();
             message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
-            Func<Message, CancellationToken, Task> simulateMessageReceived = null;
+            Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
             messageReceiver
-                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
-                .Callback((Func<Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
+                .Callback((Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
                 {
                     simulateMessageReceived = callback;
                 })

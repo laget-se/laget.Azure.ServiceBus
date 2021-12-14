@@ -11,7 +11,6 @@ using Xunit;
 
 namespace laget.Azure.ServiceBus.Tests.Topic
 {
-    using Message = Microsoft.Azure.ServiceBus.Message;
     public class TopicSenderTests
     {
         [Fact]
@@ -26,7 +25,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
 
             blobContainerClient.Verify(b => b.CreateIfNotExists(It.IsAny<PublicAccessType>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobContainerEncryptionScopeOptions>(), It.IsAny<CancellationToken>()));
             blobContainerClient.VerifyNoOtherCalls();
-            topicClient.Verify(tc => tc.SendAsync(It.Is<Message>(m => Encoding.UTF8.GetString(m.Body) == message)));
+            topicClient.Verify(tc => tc.SendAsync(It.Is<Microsoft.Azure.ServiceBus.Message>(m => Encoding.UTF8.GetString(m.Body) == message)));
             topicClient.VerifyNoOtherCalls();
         }
 
@@ -56,7 +55,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             blobContainerClient.VerifyNoOtherCalls();
 
             topicClient.Verify();
-            topicClient.Verify(tc => tc.SendAsync(It.Is<Message>(m => m.Body == null && (string)m.UserProperties[TopicConstants.BlobIdHeader] == blobId)));
+            topicClient.Verify(tc => tc.SendAsync(It.Is<Microsoft.Azure.ServiceBus.Message>(m => m.Body == null && (string)m.UserProperties[TopicConstants.BlobIdHeader] == blobId)));
             topicClient.VerifyNoOtherCalls();
         }
 
