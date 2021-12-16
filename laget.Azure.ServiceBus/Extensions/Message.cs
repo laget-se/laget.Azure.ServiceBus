@@ -1,5 +1,5 @@
-﻿using System.Text;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System.Text;
 
 namespace laget.Azure.ServiceBus.Extensions
 {
@@ -19,12 +19,10 @@ namespace laget.Azure.ServiceBus.Extensions
             return entity;
         }
 
-        public static Microsoft.Azure.ServiceBus.Message ToServiceBusMessage(this IMessage message)
+        public static byte[] GetBytes(this IMessage message)
         {
             var json = message.Serialize();
-            var bytes = Encoding.UTF8.GetBytes(json);
-
-            return new Microsoft.Azure.ServiceBus.Message(bytes);
+            return Encoding.UTF8.GetBytes(json);
         }
     }
 }
