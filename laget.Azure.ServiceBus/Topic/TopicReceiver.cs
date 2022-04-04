@@ -9,11 +9,15 @@ namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicReceiver
     {
-        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null);
+        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler);
+        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions handlerOptions);
     }
 
     public class TopicReceiver : ITopicReceiver
     {
+        private const int DefaultMaxConcurrentCalls = 10;
+        private const bool DefaultAutoComplete = true;
+
         private readonly IMessageReceiver _client;
         private readonly BlobContainerClient _blobContainerClient;
         private readonly string _topic;
@@ -39,11 +43,13 @@ namespace laget.Azure.ServiceBus.Topic
         }
 
 
-        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null)
+        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler)
         {
-            if (handlerOptions == null)
-                handlerOptions = new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = 10, AutoComplete = true };
+            Register(callback, new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = DefaultMaxConcurrentCalls, AutoComplete = DefaultAutoComplete });
+        }
 
+        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions handlerOptions)
+        {
             _client.RegisterMessageHandler(HandlerWrapper(callback), handlerOptions);
         }
 
@@ -58,21 +64,19 @@ namespace laget.Azure.ServiceBus.Topic
                     {
                         throw new InvalidOperationException("Received message with blob payload but receiver is not configured to use blobs");
                     }
-                    else
-                    {
-                        var blobId = message.UserProperties[TopicConstants.BlobIdHeader];
-                        if (blobId is string blobName)
-                        {
-                            var blobClient = _blobContainerClient.GetBlobClient(BlobPath(blobName));
-                            var response = await blobClient.DownloadContentAsync(ct);
-                            if (response != null)
-                            {
-                                message.Body = response.Value.Content.ToArray();
-                            }
 
-                            await callback(message, ct);
-                            await blobClient.DeleteAsync(cancellationToken: ct);
+                    var blobId = message.UserProperties[TopicConstants.BlobIdHeader];
+                    if (blobId is string blobName)
+                    {
+                        var blobClient = _blobContainerClient.GetBlobClient(BlobPath(blobName));
+                        var response = await blobClient.DownloadContentAsync(ct);
+                        if (response != null)
+                        {
+                            message.Body = response.Value.Content.ToArray();
                         }
+
+                        await callback(message, ct);
+                        await blobClient.DeleteAsync(cancellationToken: ct);
                     }
                 }
                 else
