@@ -16,12 +16,12 @@
     <repository type="git" url="https://github.com/laget-se/laget.Azure.ServiceBus" branch="master" />
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="Azure.Storage.Blobs" version="12.13.1" />
+        <dependency id="Azure.Storage.Blobs" version="12.14.1" />
         <dependency id="Microsoft.Azure.ServiceBus" version="5.2.0" />
         <dependency id="Newtonsoft.Json" version="13.0.1" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="Azure.Storage.Blobs" version="12.13.1" />
+        <dependency id="Azure.Storage.Blobs" version="12.14.1" />
         <dependency id="Microsoft.Azure.ServiceBus" version="5.2.0" />
         <dependency id="Newtonsoft.Json" version="13.0.1" />
       </group>
