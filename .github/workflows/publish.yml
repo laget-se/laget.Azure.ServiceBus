@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch: {}
 
 jobs:
   tests:
@@ -14,7 +15,10 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: |
+          7.0.x
+          6.0.x
+          3.1.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
@@ -31,15 +35,16 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj --no-restore --configuration Release
     - name: Publish
-      uses: laget-se/publish-nuget@v2.6.10
+      uses: laget-se/publish-nuget@v2.7.2
       with:
-        PROJECT_FILE_PATH: laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj
+        INCLUDE_SYMBOLS: true
         NUGET_KEY: ${{secrets.NUGET_API_KEY}}
         NUSPEC_FILE: laget.Azure.ServiceBus.nuspec
+        PROJECT_FILE_PATH: laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj
         VERSION_STATIC: "1.1.${{github.run_number}}"
