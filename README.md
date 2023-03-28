@@ -16,7 +16,7 @@ public class SomeClass
         _topicSender = new TopicSender(connectionString,
             new TopicOptions
             {
-                TopicName = configuration.GetValue<string>("ServiceBus:TopicName"),
+                TopicName = configuration.GetValue<string>("ServiceBus:SomeClass:TopicName"),
                 RetryPolicy = new RetryExponential(minimumBackoff: TimeSpan.FromSeconds(5), maximumBackoff: TimeSpan.FromMinutes(5), maximumRetryCount: 100)
             });
     }
@@ -51,8 +51,8 @@ public class SomeClass : IHostedService
     public SomeClass(IConfiguration configuration)
     {
         _receiver = new TopicReceiver(configuration.GetValue<string>("ServiceBus:Url")
-                .Replace("{name}", configuration.GetValue<string>("ServiceBus:QueueService:Name"))
-                .Replace("{key}", configuration.GetValue<string>("ServiceBus:QueueService:QueueKey")),
+                .Replace("{name}", configuration.GetValue<string>("ServiceBus:SomeClass:Name"))
+                .Replace("{key}", configuration.GetValue<string>("ServiceBus:SomeClass:QueueKey")),
             new TopicOptions
             {
                 TopicName = "queue",
