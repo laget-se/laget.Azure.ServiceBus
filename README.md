@@ -5,6 +5,44 @@ A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azur
 ![Nuget](https://img.shields.io/nuget/dt/laget.Azure.ServiceBus)
 
 ## Usage
+### TopicSender
+```c#
+public class SomeClass : IHostedService
+{
+    readonly TopicSender _sender;
+    
+    public SomeClass(IConfiguration configuration)
+    {
+        _topicSender = new TopicSender(connectionString,
+            new TopicOptions
+            {
+                TopicName = configuration.GetValue<string>("ServiceBus:TopicName"),
+                RetryPolicy = new RetryExponential(minimumBackoff: TimeSpan.FromSeconds(5), maximumBackoff: TimeSpan.FromMinutes(5), maximumRetryCount: 100)
+            });
+    }
+
+    public async Task SendAsync(Models.Event @event)
+    {
+        var json = JsonConvert.SerializeObject(@event, new JsonSerializerSettings
+        {
+            ContractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new CamelCaseNamingStrategy
+                {
+                    ProcessDictionaryKeys = true,
+                    ProcessExtensionDataNames = true,
+                    OverrideSpecifiedNames = true
+                }
+            },
+            Formatting = Formatting.Indented
+        });
+
+        await _sender.SendAsync(json);
+    }
+}
+```
+
+### TopicReceiver
 ```c#
 public class SomeClass : IHostedService
 {
