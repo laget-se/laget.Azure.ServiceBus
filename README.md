@@ -7,7 +7,7 @@ A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azur
 ## Usage
 ### TopicSender
 ```c#
-public class SomeClass : IHostedService
+public class SomeClass
 {
     readonly TopicSender _sender;
     
