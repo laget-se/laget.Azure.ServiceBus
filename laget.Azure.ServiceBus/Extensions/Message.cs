@@ -22,6 +22,11 @@ namespace laget.Azure.ServiceBus.Extensions
 
         public static DateTime ScheduledAt(this Microsoft.Azure.ServiceBus.Message message)
         {
+            return (message.ExpiresAtUtc - message.TimeToLive).ToLocalTime();
+        }
+
+        public static DateTime ScheduledAtUtc(this Microsoft.Azure.ServiceBus.Message message)
+        {
             return (message.ExpiresAtUtc - message.TimeToLive);
         }
 
