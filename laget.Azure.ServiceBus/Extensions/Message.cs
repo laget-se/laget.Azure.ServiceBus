@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Text;
 
 namespace laget.Azure.ServiceBus.Extensions
@@ -17,6 +18,11 @@ namespace laget.Azure.ServiceBus.Extensions
             entity.Source = message;
 
             return entity;
+        }
+
+        public static DateTime ExpiresAt(this Microsoft.Azure.ServiceBus.Message message)
+        {
+            return (message.ExpiresAtUtc - message.TimeToLive);
         }
 
         public static byte[] GetBytes(this IMessage message)
