@@ -1,6 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Extensions;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,6 +17,11 @@ namespace laget.Azure.ServiceBus.Topic
         Task SendAsync(string json);
         Task SendAsync(IEnumerable<string> messages);
         Task ScheduleAsync(string json, DateTimeOffset offset);
+        Task Deschedule(long sequenceNumber);
+
+        void RegisterPlugin(ServiceBusPlugin plugin);
+        void UnregisterPlugin(ServiceBusPlugin plugin);
+        IEnumerable<ServiceBusPlugin> RegisteredPlugins();
     }
 
     public class TopicSender : ITopicSender
@@ -82,6 +88,26 @@ namespace laget.Azure.ServiceBus.Topic
             var bytes = Encoding.UTF8.GetBytes(json);
 
             await _client.ScheduleMessageAsync(await CreateMessage(bytes), offset);
+        }
+
+        public async Task Deschedule(long sequenceNumber)
+        {
+            await _client.CancelScheduledMessageAsync(sequenceNumber);
+        }
+
+        public void RegisterPlugin(ServiceBusPlugin plugin)
+        {
+            _client.RegisterPlugin(plugin);
+        }
+
+        public void UnregisterPlugin(ServiceBusPlugin plugin)
+        {
+            _client.UnregisterPlugin(plugin.Name);
+        }
+
+        public IEnumerable<ServiceBusPlugin> RegisteredPlugins()
+        {
+            return _client.RegisteredPlugins;
         }
 
         private async Task<Microsoft.Azure.ServiceBus.Message> CreateMessage(byte[] body)

@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
+using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
 
 namespace laget.Azure.ServiceBus.Queue
 {
@@ -11,6 +13,11 @@ namespace laget.Azure.ServiceBus.Queue
         Task ScheduleAsync(IMessage message, DateTimeOffset offset);
         Task SendAsync(string json);
         Task ScheduleAsync(string json, DateTimeOffset offset);
+        Task Deschedule(long sequenceNumber);
+
+        void RegisterPlugin(ServiceBusPlugin plugin);
+        void UnregisterPlugin(ServiceBusPlugin plugin);
+        IEnumerable<ServiceBusPlugin> RegisteredPlugins();
     }
 
     public class QueueSender : IQueueSender
@@ -21,7 +28,6 @@ namespace laget.Azure.ServiceBus.Queue
         {
             _client = new QueueClient(connectionString, options.QueueName, options.ReceiveMode, options.RetryPolicy);
         }
-
 
         public async Task SendAsync(IMessage message)
         {
@@ -51,6 +57,26 @@ namespace laget.Azure.ServiceBus.Queue
             var bytes = Encoding.UTF8.GetBytes(json);
 
             await _client.ScheduleMessageAsync(new Microsoft.Azure.ServiceBus.Message(bytes), offset);
+        }
+
+        public async Task Deschedule(long sequenceNumber)
+        {
+            await _client.CancelScheduledMessageAsync(sequenceNumber);
+        }
+
+        public void RegisterPlugin(ServiceBusPlugin plugin)
+        {
+            _client.RegisterPlugin(plugin);
+        }
+
+        public void UnregisterPlugin(ServiceBusPlugin plugin)
+        {
+            _client.UnregisterPlugin(plugin.Name);
+        }
+
+        public IEnumerable<ServiceBusPlugin> RegisteredPlugins()
+        {
+            return _client.RegisteredPlugins;
         }
     }
 }

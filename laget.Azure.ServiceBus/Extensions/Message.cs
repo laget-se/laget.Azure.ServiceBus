@@ -20,7 +20,7 @@ namespace laget.Azure.ServiceBus.Extensions
             return entity;
         }
 
-        public static DateTime ExpiresAt(this Microsoft.Azure.ServiceBus.Message message)
+        public static DateTime ScheduledAt(this Microsoft.Azure.ServiceBus.Message message)
         {
             return (message.ExpiresAtUtc - message.TimeToLive);
         }
