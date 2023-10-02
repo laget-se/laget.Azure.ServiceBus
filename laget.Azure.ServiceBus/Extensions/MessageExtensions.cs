@@ -12,7 +12,7 @@ namespace laget.Azure.ServiceBus.Extensions
     {
         public static TEntity Deserialize<TEntity>(this ServiceBusMessage message) where TEntity : Message
         {
-            var entity = JsonConvert.DeserializeObject<TEntity>(Encoding.UTF8.GetString(message.Body),
+            var entity = JsonConvert.DeserializeObject<TEntity>(message.Body.ToString(),
                 new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.Auto

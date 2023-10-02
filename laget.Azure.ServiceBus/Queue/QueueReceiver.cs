@@ -36,24 +36,28 @@ namespace laget.Azure.ServiceBus.Queue
 
         public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            await using var client = new ServiceBusClient(_connectionString);
-            await using var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
+            var client = new ServiceBusClient(_connectionString);
+            var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
 
             processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
+            await client.DisposeAsync();
+            await processor.DisposeAsync();
         }
 
         public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
         {
-            await using var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
-            await using var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
+            var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
+            var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
 
             processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
+            await client.DisposeAsync();
+            await processor.DisposeAsync();
         }
 
 
