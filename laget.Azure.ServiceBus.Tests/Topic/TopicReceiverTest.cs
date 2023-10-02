@@ -1,10 +1,9 @@
 ﻿using Azure;
+using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using laget.Azure.ServiceBus.Constants;
 using laget.Azure.ServiceBus.Topic;
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -20,13 +19,13 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public void ShouldGetPayloadFromMessageBodyIfNoHeaderPresent()
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-            var message = new Microsoft.Azure.ServiceBus.Message(body);
+            var message = new ServiceBusMessage(body);
 
-            Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
+            Func<ServiceBusMessage, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
             messageReceiver
                 .Setup(mr => mr.RegisterMessageHandler(It.IsAny<Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task>>(), It.IsAny<MessageHandlerOptions>()))
-                .Callback((Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions _) =>
+                .Callback((Func<ServiceBusMessage, CancellationToken, Task> callback, MessageHandlerOptions _) =>
                 {
                     simulateMessageReceived = callback;
                 })
@@ -34,7 +33,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             var blobContainerClient = new Mock<BlobContainerClient>();
             var sut = new TopicReceiver(messageReceiver.Object, "topic", blobContainerClient.Object);
 
-            Microsoft.Azure.ServiceBus.Message receivedMessage = null;
+            ServiceBusMessage receivedMessage = null;
             sut.Register((m, _) =>
             {
                 receivedMessage = m;
@@ -57,7 +56,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public void ShouldGetPayloadFromBlobStorageIfHeaderPresent()
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-            var message = new Microsoft.Azure.ServiceBus.Message();
+            var message = new ServiceBusMessage();
             message.UserProperties.Add(MessageConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
             Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
