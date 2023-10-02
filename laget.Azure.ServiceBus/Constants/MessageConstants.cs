@@ -1,6 +1,6 @@
-﻿namespace laget.Azure.ServiceBus.Topic
+﻿namespace laget.Azure.ServiceBus.Constants
 {
-    public class TopicConstants
+    public class MessageConstants
     {
         public const string BlobIdHeader = "BlobId";
         public const int MaxMessageSize = 200 * 1024;

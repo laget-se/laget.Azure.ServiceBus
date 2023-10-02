@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using laget.Azure.ServiceBus.Constants;
 using laget.Azure.ServiceBus.Topic;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
@@ -57,7 +58,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
             var message = new Microsoft.Azure.ServiceBus.Message();
-            message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
+            message.UserProperties.Add(MessageConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
             Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
@@ -118,7 +119,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public void ShouldThrowExceptionWhenReceivingMessageWithBlobHeaderWithoutBlobStorage()
         {
             var message = new Microsoft.Azure.ServiceBus.Message();
-            message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
+            message.UserProperties.Add(MessageConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
             Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();
@@ -147,7 +148,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         {
             var body = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
             var message = new Microsoft.Azure.ServiceBus.Message();
-            message.UserProperties.Add(TopicConstants.BlobIdHeader, $"topic/{Guid.Empty}");
+            message.UserProperties.Add(MessageConstants.BlobIdHeader, $"topic/{Guid.Empty}");
 
             Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> simulateMessageReceived = null;
             var messageReceiver = new Mock<IMessageReceiver>();

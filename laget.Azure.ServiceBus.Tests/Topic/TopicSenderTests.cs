@@ -1,5 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using laget.Azure.ServiceBus.Constants;
 using laget.Azure.ServiceBus.Topic;
 using Microsoft.Azure.ServiceBus;
 using Moq;
@@ -56,7 +57,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             blobContainerClient.VerifyNoOtherCalls();
 
             topicClient.Verify();
-            topicClient.Verify(tc => tc.SendAsync(It.Is<Microsoft.Azure.ServiceBus.Message>(m => m.Body == null && (string)m.UserProperties[TopicConstants.BlobIdHeader] == blobId)));
+            topicClient.Verify(tc => tc.SendAsync(It.Is<Microsoft.Azure.ServiceBus.Message>(m => m.Body == null && (string)m.UserProperties[MessageConstants.BlobIdHeader] == blobId)));
             topicClient.VerifyNoOtherCalls();
         }
 
