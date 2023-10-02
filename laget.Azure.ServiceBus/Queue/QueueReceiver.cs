@@ -2,15 +2,14 @@
 using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Constants;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Queue
 {
     public interface IQueueReceiver
     {
-        Task Register(Func<ServiceBusMessage, CancellationToken, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
-        Task Register(Func<ServiceBusMessage, CancellationToken, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions);
+        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
+        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions);
     }
 
     public class QueueReceiver : IQueueReceiver
@@ -20,10 +19,12 @@ namespace laget.Azure.ServiceBus.Queue
         private readonly QueueOptions _queueQueueOptions;
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions)
-        {
-            _connectionString = connectionString;
-            _queueQueueOptions = queueOptions;
-        }
+            : this(connectionString, queueOptions, null)
+        { }
+
+        public QueueReceiver(string connectionString, QueueOptions queueOptions, string blobConnectionString, string blobContainer)
+            : this(connectionString, queueOptions, new BlobContainerClient(blobConnectionString, blobContainer))
+        { }
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions, BlobContainerClient blobContainerClient)
         {
@@ -33,18 +34,18 @@ namespace laget.Azure.ServiceBus.Queue
             _queueQueueOptions = queueOptions;
         }
 
-        public async Task Register(Func<ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
+        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
             await using var client = new ServiceBusClient(_connectionString);
             await using var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
 
-            processor.ProcessMessageAsync += messageHandler;
+            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
         }
 
-        public async Task Register(Func<ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
+        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
         {
             await using var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
             await using var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
@@ -56,7 +57,7 @@ namespace laget.Azure.ServiceBus.Queue
         }
 
 
-        private Func<ProcessMessageEventArgs, Task> HandlerWrapper(Func<ServiceBusMessage, Task> callback)
+        private Func<ProcessMessageEventArgs, Task> HandlerWrapper(Func<ProcessMessageEventArgs, Task> callback)
         {
             return async (args) =>
             {
@@ -73,17 +74,19 @@ namespace laget.Azure.ServiceBus.Queue
                         var response = await blobClient.DownloadContentAsync();
                         if (response != null)
                         {
-                            var message = new ServiceBusMessage(response.Value.Content);
-                            await callback(message);
+                            //TODO: How do we solve this? Helper methods used in implementing projects?
+                            //var message = new ServiceBusMessage(response.Value.Content);
+                            //await callback(message);
+                            await callback(args);
                         }
 
-                        await callback(args.Message);
+                        await callback(args);
                         await blobClient.DeleteAsync();
                     }
                 }
                 else
                 {
-                    await callback(args.Message.);
+                    await callback(args);
                 }
             };
         }

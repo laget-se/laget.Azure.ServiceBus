@@ -39,51 +39,56 @@ namespace laget.Azure.ServiceBus.Queue
 
         public async Task SendAsync(IMessage message)
         {
-            await using var client = new ServiceBusClient(_connectionString);
+            var client = new ServiceBusClient(_connectionString);
 
             var sender = client.CreateSender(_queueOptions.QueueName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
             await sender.SendMessageAsync(msg);
+            await client.DisposeAsync();
         }
 
         public async Task ScheduleAsync(IMessage message, DateTimeOffset offset)
         {
-            await using var client = new ServiceBusClient(_connectionString);
+            var client = new ServiceBusClient(_connectionString);
 
             var sender = client.CreateSender(_queueOptions.QueueName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
             await sender.ScheduleMessageAsync(msg, offset);
+            await client.DisposeAsync();
         }
 
         public async Task SendAsync(string json)
         {
-            await using var client = new ServiceBusClient(_connectionString);
+            var client = new ServiceBusClient(_connectionString);
 
             var sender = client.CreateSender(_queueOptions.QueueName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
             await sender.SendMessageAsync(msg);
+            await client.DisposeAsync();
         }
 
         public async Task ScheduleAsync(string json, DateTimeOffset offset)
         {
-            await using var client = new ServiceBusClient(_connectionString);
+            var client = new ServiceBusClient(_connectionString);
 
             var sender = client.CreateSender(_queueOptions.QueueName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
             await sender.ScheduleMessageAsync(msg, offset);
+            await client.DisposeAsync();
         }
 
         public async Task Deschedule(long sequenceNumber)
         {
-            await using var client = new ServiceBusClient(_connectionString);
+            var client = new ServiceBusClient(_connectionString);
 
             var sender = client.CreateSender(_queueOptions.QueueName);
 
             await sender.CancelScheduledMessageAsync(sequenceNumber);
+            await client.DisposeAsync();
         }
     }
 }

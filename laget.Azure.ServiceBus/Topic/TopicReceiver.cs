@@ -2,21 +2,18 @@
 using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Constants;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicReceiver
     {
-        void Register(Func<ServiceBusMessage, CancellationToken, Task> messageHandler, Func<ProcessErrorEventArgs, Task> exceptionHandler);
+        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
+        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions);
     }
 
     public class TopicReceiver : ITopicReceiver
     {
-        private const int DefaultMaxConcurrentCalls = 10;
-        private const bool DefaultAutoComplete = true;
-
         private readonly BlobContainerClient _blobContainerClient;
         private readonly string _connectionString;
         private readonly TopicOptions _topicOptions;
@@ -37,46 +34,59 @@ namespace laget.Azure.ServiceBus.Topic
             _topicOptions = topicOptions;
         }
 
-
-        public void Register(Func<ServiceBusReceivedMessage, CancellationToken, Task> messageHandler, Func<ProcessErrorEventArgs, Task> exceptionHandler)
+        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            Register(messageHandler, new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = DefaultMaxConcurrentCalls, AutoComplete = DefaultAutoComplete });
+            await using var client = new ServiceBusClient(_connectionString);
+            await using var processor = client.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName);
+
+            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
+            processor.ProcessErrorAsync += errorHandler;
+
+            await processor.StartProcessingAsync();
         }
 
-        public void Register(Func<ServiceBusMessage, CancellationToken, Task> messageHandler, MessageHandlerOptions handlerOptions)
+        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
         {
-            _client.RegisterMessageHandler(HandlerWrapper(messageHandler), handlerOptions);
+            await using var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
+            await using var processor = client.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName);
+
+            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
+            processor.ProcessErrorAsync += errorHandler;
+
+            await processor.StartProcessingAsync();
         }
 
-        private Func<ServiceBusMessage, CancellationToken, Task> HandlerWrapper(Func<ServiceBusMessage, CancellationToken, Task> callback)
+
+        private Func<ProcessMessageEventArgs, Task> HandlerWrapper(Func<ProcessMessageEventArgs, Task> callback)
         {
-            return async (message, ct) =>
+            return async (args) =>
             {
-                if (message.UserProperties.ContainsKey(MessageConstants.BlobIdHeader))
+                if (args.Message.ApplicationProperties.TryGetValue(MessageConstants.BlobIdHeader, out var blobId))
                 {
-
                     if (_blobContainerClient == null)
                     {
                         throw new InvalidOperationException("Received message with blob payload but receiver is not configured to use blobs");
                     }
 
-                    var blobId = message.UserProperties[MessageConstants.BlobIdHeader];
                     if (blobId is string blobName)
                     {
                         var blobClient = _blobContainerClient.GetBlobClient(BlobPath(blobName));
-                        var response = await blobClient.DownloadContentAsync(ct);
+                        var response = await blobClient.DownloadContentAsync();
                         if (response != null)
                         {
-                            message.Body = response.Value.Content.ToArray();
+                            //TODO: How do we solve this? Helper methods used in implementing projects?
+                            //var message = new ServiceBusMessage(response.Value.Content);
+                            //await callback(message);
+                            await callback(args);
                         }
 
-                        await callback(message, ct);
-                        await blobClient.DeleteAsync(cancellationToken: ct);
+                        await callback(args);
+                        await blobClient.DeleteAsync();
                     }
                 }
                 else
                 {
-                    await callback(message, ct);
+                    await callback(args);
                 }
             };
         }
