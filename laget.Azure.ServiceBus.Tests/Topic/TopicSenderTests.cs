@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace laget.Azure.ServiceBus.Tests.Topic
@@ -14,14 +15,14 @@ namespace laget.Azure.ServiceBus.Tests.Topic
     public class TopicSenderTests
     {
         [Fact]
-        public void ShouldSendSmallContentInMessagePayload()
+        public async Task ShouldSendSmallContentInMessagePayload()
         {
             const string message = "{ \"key\": \"value\" }";
             var topicClient = new Mock<ITopicClient>();
             var blobContainerClient = new Mock<BlobContainerClient>();
             var sut = new TopicSender(topicClient.Object, blobContainerClient.Object);
 
-            sut.SendAsync(message).Wait();
+            await sut.SendAsync(message);
 
             blobContainerClient.Verify(b => b.CreateIfNotExists(It.IsAny<PublicAccessType>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobContainerEncryptionScopeOptions>(), It.IsAny<CancellationToken>()));
             blobContainerClient.VerifyNoOtherCalls();
@@ -30,7 +31,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         }
 
         [Fact]
-        public void ShouldSendLargeContentUsingBlobStorage()
+        public async Task ShouldSendLargeContentUsingBlobStorage()
         {
             var blobId = "";
             var blobPath = "";
@@ -47,7 +48,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
                 });
             var sut = new TopicSender(topicClient.Object, blobContainerClient.Object);
 
-            sut.SendAsync(message).Wait();
+            await sut.SendAsync(message);
 
             blobContainerClient.Verify(b => b.CreateIfNotExists(It.IsAny<PublicAccessType>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobContainerEncryptionScopeOptions>(), It.IsAny<CancellationToken>()));
             blobContainerClient.Verify(bc =>
