@@ -33,6 +33,7 @@ public class SomeClass
 }
 ```
 
+> We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
 public class SomeClass
 {
@@ -97,7 +98,7 @@ public class SomeClass : IHostedService
 }
 ```
 
->
+> We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
 public class SomeClass : IHostedService
 {
@@ -163,6 +164,8 @@ public class SomeClass
     }
 }
 ```
+
+> We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
 public class SomeClass
 {
@@ -226,6 +229,7 @@ public class SomeClass : IHostedService
 }
 ```
 
+> We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
 public class SomeClass : IHostedService
 {
