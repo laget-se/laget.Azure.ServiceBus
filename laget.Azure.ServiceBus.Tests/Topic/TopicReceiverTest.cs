@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
+using laget.Azure.ServiceBus.Factories;
 using laget.Azure.ServiceBus.Topic;
 using Moq;
 using System;
@@ -17,6 +18,7 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             var message = new ServiceBusMessage(body);
 
             var blobContainerClient = new Mock<BlobContainerClient>();
+            var blobFactory = new ServiceBusBlobMessageFactory(blobContainerClient.Object, "topic");
             var serviceBusClient = new Mock<ServiceBusClient>();
             var serviceBusSender = new Mock<ServiceBusSender>();
             var serviceBusProcessor = new Mock<ServiceBusProcessor>();
@@ -36,10 +38,10 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             //    })
             //    .Verifiable();
 
-            var sut = new TopicReceiver(blobContainerClient.Object, serviceBusClient.Object, topicOptions);
+            var sut = new TopicReceiver(blobFactory, serviceBusClient.Object, topicOptions);
 
             ServiceBusReceivedMessage receivedMessage = null;
-            await sut.Register((m) =>
+            await sut.RegisterAsync((m) =>
             {
                 receivedMessage = m.Message;
                 return Task.CompletedTask;

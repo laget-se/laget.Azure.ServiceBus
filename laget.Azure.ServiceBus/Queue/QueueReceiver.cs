@@ -1,6 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
-using laget.Azure.ServiceBus.Constants;
+using laget.Azure.ServiceBus.Factories;
 using System;
 using System.Threading.Tasks;
 
@@ -8,89 +8,49 @@ namespace laget.Azure.ServiceBus.Queue
 {
     public interface IQueueReceiver
     {
-        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
-        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions);
+        Task RegisterAsync(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
+        Task RegisterAsync(Func<BlobClient, ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
     }
 
     public class QueueReceiver : IQueueReceiver
     {
-        private readonly BlobContainerClient _blobContainerClient;
+        private readonly ServiceBusBlobMessageFactory _serviceBusBlobMessageFactory;
         private readonly ServiceBusClient _serviceBusClient;
         private readonly QueueOptions _queueQueueOptions;
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions)
-            : this(null, new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
+            : this(new ServiceBusBlobMessageFactory(), new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
         { }
 
         public QueueReceiver(string blobConnectionString, string blobContainer, string connectionString, QueueOptions queueOptions)
-            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
+            : this(new ServiceBusBlobMessageFactory(blobConnectionString, blobContainer, queueOptions.QueueName), new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
         { }
 
-        public QueueReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
+        internal QueueReceiver(ServiceBusBlobMessageFactory serviceBusBlobMessageFactory, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
         {
-            _blobContainerClient = blobContainerClient;
-            _blobContainerClient?.CreateIfNotExists();
+            _serviceBusBlobMessageFactory = serviceBusBlobMessageFactory;
             _serviceBusClient = serviceBusClient;
             _queueQueueOptions = queueOptions;
         }
 
-        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
+        public async Task RegisterAsync(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName);
+            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
 
-            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
+            processor.ProcessMessageAsync += messageHandler;
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
-            await processor.DisposeAsync();
         }
 
-        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
+        public async Task RegisterAsync(Func<BlobClient, ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName);
+            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
 
-            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
+            processor.ProcessMessageAsync += _serviceBusBlobMessageFactory.HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
-            await processor.DisposeAsync();
         }
-
-
-        private Func<ProcessMessageEventArgs, Task> HandlerWrapper(Func<ProcessMessageEventArgs, Task> callback)
-        {
-            return async (args) =>
-            {
-                if (args.Message.ApplicationProperties.TryGetValue(MessageConstants.BlobIdHeader, out var blobId))
-                {
-                    if (_blobContainerClient == null)
-                    {
-                        throw new InvalidOperationException("Received message with blob payload but receiver is not configured to use blobs");
-                    }
-
-                    if (blobId is string blobName)
-                    {
-                        var blobClient = _blobContainerClient.GetBlobClient(BlobPath(blobName));
-                        var response = await blobClient.DownloadContentAsync();
-                        if (response != null)
-                        {
-                            //TODO: How do we solve this? Helper methods used in implementing projects?
-                            //var message = new ServiceBusMessage(response.Value.Content);
-                            //await callback(message);
-                            await callback(args);
-                        }
-
-                        await callback(args);
-                        await blobClient.DeleteAsync();
-                    }
-                }
-                else
-                {
-                    await callback(args);
-                }
-            };
-        }
-
-        private string BlobPath(string blobName) => $"{_queueQueueOptions.QueueName}/{blobName}";
     }
 }

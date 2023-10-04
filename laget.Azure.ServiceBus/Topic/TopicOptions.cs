@@ -8,5 +8,9 @@ namespace laget.Azure.ServiceBus.Topic
         public string SubscriptionName { get; set; }
 
         public ServiceBusClientOptions ServiceBusClientOptions { get; set; } = new ServiceBusClientOptions();
+        public ServiceBusProcessorOptions ServiceBusProcessorOptions { get; set; } = new ServiceBusProcessorOptions()
+        {
+            AutoCompleteMessages = true
+        };
     }
 }
