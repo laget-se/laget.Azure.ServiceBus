@@ -15,48 +15,44 @@ namespace laget.Azure.ServiceBus.Queue
     public class QueueReceiver : IQueueReceiver
     {
         private readonly BlobContainerClient _blobContainerClient;
-        private readonly string _connectionString;
+        private readonly ServiceBusClient _serviceBusClient;
         private readonly QueueOptions _queueQueueOptions;
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions)
-            : this(connectionString, queueOptions, null)
+            : this(null, new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
         { }
 
-        public QueueReceiver(string connectionString, QueueOptions queueOptions, string blobConnectionString, string blobContainer)
-            : this(connectionString, queueOptions, new BlobContainerClient(blobConnectionString, blobContainer))
+        public QueueReceiver(string blobConnectionString, string blobContainer, string connectionString, QueueOptions queueOptions)
+            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
         { }
 
-        public QueueReceiver(string connectionString, QueueOptions queueOptions, BlobContainerClient blobContainerClient)
+        public QueueReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
         {
             _blobContainerClient = blobContainerClient;
             _blobContainerClient?.CreateIfNotExists();
-            _connectionString = connectionString;
+            _serviceBusClient = serviceBusClient;
             _queueQueueOptions = queueOptions;
         }
 
         public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            var client = new ServiceBusClient(_connectionString);
-            var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
+            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName);
 
             processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
-            await client.DisposeAsync();
             await processor.DisposeAsync();
         }
 
         public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
         {
-            var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
-            var processor = client.CreateProcessor(_queueQueueOptions.QueueName);
+            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName);
 
             processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
-            await client.DisposeAsync();
             await processor.DisposeAsync();
         }
 

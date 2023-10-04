@@ -9,54 +9,38 @@ namespace laget.Azure.ServiceBus.Topic
     public interface ITopicReceiver
     {
         Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
-        Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions);
     }
 
     public class TopicReceiver : ITopicReceiver
     {
         private readonly BlobContainerClient _blobContainerClient;
-        private readonly string _connectionString;
+        private readonly ServiceBusClient _serviceBusClient;
         private readonly TopicOptions _topicOptions;
 
         public TopicReceiver(string connectionString, TopicOptions topicOptions)
-            : this(connectionString, topicOptions, null)
+            : this(null, new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicReceiver(string connectionString, TopicOptions topicOptions, string blobConnectionString, string blobContainer)
-            : this(connectionString, topicOptions, new BlobContainerClient(blobConnectionString, blobContainer))
+        public TopicReceiver(string blobConnectionString, string blobContainer, string connectionString, TopicOptions topicOptions)
+            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicReceiver(string connectionString, TopicOptions topicOptions, BlobContainerClient blobContainerClient)
+        public TopicReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, TopicOptions topicOptions)
         {
             _blobContainerClient = blobContainerClient;
             _blobContainerClient?.CreateIfNotExists();
-            _connectionString = connectionString;
+            _serviceBusClient = serviceBusClient;
             _topicOptions = topicOptions;
         }
 
         public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            var client = new ServiceBusClient(_connectionString);
-            var processor = client.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName);
+            var processor = _serviceBusClient.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName);
 
             processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
             await processor.StartProcessingAsync();
-            await client.DisposeAsync();
-            await processor.DisposeAsync();
-        }
-
-        public async Task Register(Func<ProcessMessageEventArgs, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, ServiceBusClientOptions serviceBusClientOptions)
-        {
-            var client = new ServiceBusClient(_connectionString, serviceBusClientOptions);
-            var processor = client.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName);
-
-            processor.ProcessMessageAsync += HandlerWrapper(messageHandler);
-            processor.ProcessErrorAsync += errorHandler;
-
-            await processor.StartProcessingAsync();
-            await client.DisposeAsync();
             await processor.DisposeAsync();
         }
 

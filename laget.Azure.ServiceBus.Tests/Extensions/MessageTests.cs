@@ -7,8 +7,6 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
 {
     public class MessageTests
     {
-        private readonly ServiceBusMessage _serviceBusMessage;
-
         //public MessageTests()
         //{
         //    // One-time setup
@@ -31,8 +29,9 @@ namespace laget.Azure.ServiceBus.Tests.Extensions
         [Fact]
         public void ShouldDeserializeMessage()
         {
-            _serviceBusMessage.Body = new BinaryData("{ \"Name\": \"Jane Doe\" }".ToBytes());
-            var model = _serviceBusMessage.Deserialize<Models.User>();
+            var body = new BinaryData("{ \"Name\": \"Jane Doe\" }".ToBytes());
+            var serviceBusMessage = new ServiceBusMessage(body);
+            var model = serviceBusMessage.Deserialize<Models.User>();
 
             Assert.Equal("Jane Doe", model.Name);
         }
