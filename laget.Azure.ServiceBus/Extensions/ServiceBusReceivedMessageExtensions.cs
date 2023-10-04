@@ -8,7 +8,7 @@ namespace laget.Azure.ServiceBus.Extensions
 {
     public static class ServiceBusReceivedMessageExtensions
     {
-        public static TEntity Map<TEntity>(this ServiceBusReceivedMessage message, BlobClient blobClient) where TEntity : Message
+        public static TEntity Deserialize<TEntity>(this ServiceBusReceivedMessage message, BlobClient blobClient) where TEntity : Message
         {
             if (blobClient != null && message.ApplicationProperties.TryGetValue(MessageConstants.BlobIdHeader, out var blobId))
             {
@@ -41,7 +41,8 @@ namespace laget.Azure.ServiceBus.Extensions
                 return entity;
             }
         }
-        public static TEntity Map<TEntity>(this ServiceBusReceivedMessage message) where TEntity : Message
+
+        public static TEntity Deserialize<TEntity>(this ServiceBusReceivedMessage message) where TEntity : Message
         {
             var entity = JsonConvert.DeserializeObject<TEntity>(message.Body.ToString(),
                 new JsonSerializerSettings

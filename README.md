@@ -7,6 +7,12 @@ A generic implementation of Microsoft.Azure.ServiceBus, the next generation Azur
 ## Usage
 > Azure Service Bus supports reliable message queuing and durable publish/subscribe messaging. The messaging entities that form the core of the messaging capabilities in Service Bus are queues, topics and subscriptions.
 
+You can use `Deserialize` on the following objects when handling a received message
+* `args.Message.Deserialize<Models.Message>();`
+* `args.Deserialize<Models.Message>();`
+* `args.Message.Deserialize<Models.Message>(blobClient);`
+* `args.Deserialize<Models.Message>(blobClient);`
+
 ### Topics
 > A queue allows processing of a message by a single consumer. In contrast to queues, topics and subscriptions provide a one-to-many form of communication in a publish and subscribe pattern. It's useful for scaling to large numbers of recipients. Each published message is made available to each subscription registered with the topic. Publisher sends a message to a topic and one or more subscribers receive a copy of the message.
 
@@ -218,7 +224,7 @@ public class SomeClass : IHostedService
 
     private async Task MessageHandler(ProcessMessageEventArgs args)
     {
-        var model = args.Message.Map<Models.Message>();
+        var model = args.Deserialize<Models.Message>();
         return Task.CompletedTask;
     }
 
@@ -259,7 +265,7 @@ public class SomeClass : IHostedService
 
     private async Task MessageHandler(BlobClient blobClient, ProcessMessageEventArgs args)
     {
-        var model = args.Message.Map<Models.Message>(blobClient);
+        var model = args.Deserialize<Models.Message>(blobClient);
         return Task.CompletedTask;
     }
 
