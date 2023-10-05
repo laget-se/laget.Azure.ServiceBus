@@ -61,10 +61,6 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             blobContainerClient.Verify(b => b.CreateIfNotExists(It.IsAny<PublicAccessType>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobContainerEncryptionScopeOptions>(), It.IsAny<CancellationToken>()));
             blobContainerClient.Verify(bc => bc.UploadBlobAsync(It.Is<string>(s => s == blobPath), It.Is<BinaryData>(bd => bd.ToString() == message), It.IsAny<CancellationToken>()));
             blobContainerClient.VerifyNoOtherCalls();
-            //serviceBusClient.Verify(s => s.CreateSender(topicOptions.TopicName));
-            //serviceBusClient.VerifyNoOtherCalls();
-            //serviceBusSender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()));
-            //serviceBusSender.VerifyNoOtherCalls();
         }
 
         [Fact]
