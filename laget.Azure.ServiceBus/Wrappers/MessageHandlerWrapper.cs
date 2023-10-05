@@ -1,33 +1,25 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Constants;
+using laget.Azure.ServiceBus.Extensions;
 using System;
 using System.Threading.Tasks;
 
-namespace laget.Azure.ServiceBus.Factories
+namespace laget.Azure.ServiceBus.Wrappers
 {
-    internal class ServiceBusBlobMessageFactory
+    internal class MessageHandlerWrapper
     {
         private readonly BlobContainerClient _blobContainerClient;
         private readonly string _queueOrTopicName;
 
-        public ServiceBusBlobMessageFactory()
-        {
-        }
-
-        public ServiceBusBlobMessageFactory(string blobConnectionString, string blobContainer, string queueOrTopicName)
-            : this(new BlobContainerClient(blobConnectionString, blobContainer), queueOrTopicName)
-        {
-        }
-
-        internal ServiceBusBlobMessageFactory(BlobContainerClient blobContainerClient, string queueOrTopicName)
+        internal MessageHandlerWrapper(BlobContainerClient blobContainerClient, string queueOrTopicName)
         {
             _blobContainerClient = blobContainerClient;
             _blobContainerClient?.CreateIfNotExists();
             _queueOrTopicName = queueOrTopicName;
         }
 
-        public Func<ProcessMessageEventArgs, Task> HandlerWrapper(Func<BlobClient, ProcessMessageEventArgs, Task> callback)
+        public Func<ProcessMessageEventArgs, Task> Handler(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> callback)
         {
             return async (args) =>
             {
@@ -41,12 +33,19 @@ namespace laget.Azure.ServiceBus.Factories
                     if (blobId is string blobName)
                     {
                         var client = _blobContainerClient.GetBlobClient(BlobPath(blobName));
-                        await callback(client, args);
+                        var response = await client.DownloadContentAsync();
+
+                        var message = new ServiceBusMessage();
+                        if (response.HasValue)
+                        {
+                            message.Body = new BinaryData(response.Value.Content.ToArray());
+                        }
+                        await callback(args, message);
                     }
                 }
                 else
                 {
-                    await callback(null, args);
+                    await callback(args, args.Message.ToServiceBudMessage());
                 }
             };
         }
