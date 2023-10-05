@@ -35,7 +35,7 @@ namespace laget.Azure.ServiceBus.Wrappers
                         var client = _blobContainerClient.GetBlobClient(BlobPath(blobName));
                         var response = await client.DownloadContentAsync();
 
-                        var message = new ServiceBusMessage();
+                        var message = new ServiceBusMessage(args.Message.GetRawAmqpMessage());
                         if (response.HasValue)
                         {
                             message.Body = new BinaryData(response.Value.Content.ToArray());
