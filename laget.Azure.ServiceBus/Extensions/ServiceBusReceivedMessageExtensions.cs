@@ -39,7 +39,7 @@ namespace laget.Azure.ServiceBus.Extensions
             return message.ScheduledEnqueueTime.DateTime;
         }
 
-        public static ServiceBusMessage ToServiceBudMessage(this ServiceBusReceivedMessage message)
+        internal static ServiceBusMessage ToServiceBudMessage(this ServiceBusReceivedMessage message)
         {
             return new ServiceBusMessage(message.GetRawAmqpMessage());
         }

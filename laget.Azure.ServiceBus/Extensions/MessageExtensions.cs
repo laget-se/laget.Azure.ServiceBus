@@ -15,7 +15,7 @@ namespace laget.Azure.ServiceBus.Extensions
             return Encoding.UTF8.GetBytes(json);
         }
 
-        public static async Task<ServiceBusMessage> ToServiceBusMessageAsync(this IMessage message, BlobContainerClient blobContainerClient, string queueOrTopicName)
+        internal static async Task<ServiceBusMessage> ToServiceBusMessageAsync(this IMessage message, BlobContainerClient blobContainerClient, string queueOrTopicName)
         {
             var bytes = message.ToBytes();
             if (bytes.Length > MessageConstants.MaxMessageSize)

@@ -9,18 +9,12 @@ namespace laget.Azure.ServiceBus.Extensions
 {
     public static class StringExtensions
     {
-        public static byte[] ToBytes(this string @string)
+        internal static byte[] ToBytes(this string @string)
         {
             return Encoding.UTF8.GetBytes(@string);
         }
 
-        public static ServiceBusMessage ToServiceBusMessage(this string @string)
-        {
-            var bytes = @string.ToBytes();
-            return new ServiceBusMessage(bytes);
-        }
-
-        public static async Task<ServiceBusMessage> ToServiceBusMessageAsync(this string @string, BlobContainerClient blobContainerClient, string queueOrTopicName)
+        internal static async Task<ServiceBusMessage> ToServiceBusMessageAsync(this string @string, BlobContainerClient blobContainerClient, string queueOrTopicName)
         {
             var bytes = @string.ToBytes();
             if (bytes.Length > MessageConstants.MaxMessageSize)
