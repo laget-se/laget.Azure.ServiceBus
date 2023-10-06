@@ -1,11 +1,17 @@
-﻿using Microsoft.Azure.ServiceBus;
+﻿
+using Azure.Messaging.ServiceBus;
 
 namespace laget.Azure.ServiceBus.Queue
 {
     public class QueueOptions
     {
+        public bool AutoCompleteMessages { get; set; } = false;
         public string QueueName { get; set; }
-        public ReceiveMode ReceiveMode { get; set; } = ReceiveMode.PeekLock;
-        public RetryPolicy RetryPolicy { get; set; } = RetryPolicy.Default;
+
+        public ServiceBusClientOptions ServiceBusClientOptions { get; set; } = new ServiceBusClientOptions();
+        public ServiceBusProcessorOptions ServiceBusProcessorOptions { get; set; } = new ServiceBusProcessorOptions()
+        {
+            AutoCompleteMessages = true
+        };
     }
 }

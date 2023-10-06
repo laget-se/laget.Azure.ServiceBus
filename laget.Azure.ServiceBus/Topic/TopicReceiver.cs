@@ -1,91 +1,45 @@
-﻿using Azure.Storage.Blobs;
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
+﻿using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
+using laget.Azure.ServiceBus.Wrappers;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicReceiver
     {
-        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler);
-        void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions handlerOptions);
+        Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
     }
 
     public class TopicReceiver : ITopicReceiver
     {
-        private const int DefaultMaxConcurrentCalls = 10;
-        private const bool DefaultAutoComplete = true;
-
-        private readonly IMessageReceiver _client;
         private readonly BlobContainerClient _blobContainerClient;
-        private readonly string _topic;
+        private readonly ServiceBusClient _serviceBusClient;
+        private readonly TopicOptions _topicOptions;
 
-        public TopicReceiver(string connectionString, TopicOptions options)
-            : this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
-                 options.TopicName,
-                null)
+        public TopicReceiver(string connectionString, TopicOptions topicOptions)
+            : this(null, new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicReceiver(string connectionString, TopicOptions options, string blobConnectionString, string blobContainer)
-            : this(new MessageReceiver(connectionString, EntityNameHelper.FormatSubscriptionPath(options.TopicName, options.SubscriptionName), options.ReceiveMode, options.RetryPolicy),
-                 options.TopicName,
-                 new BlobContainerClient(blobConnectionString, blobContainer))
+        public TopicReceiver(string blobConnectionString, string blobContainer, string connectionString, TopicOptions topicOptions)
+            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicReceiver(IMessageReceiver messageReceiver, string topic, BlobContainerClient blobContainerClient)
+        internal TopicReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, TopicOptions topicOptions)
         {
-            _client = messageReceiver;
-            _topic = topic;
             _blobContainerClient = blobContainerClient;
-            _blobContainerClient?.CreateIfNotExists();
+            _serviceBusClient = serviceBusClient;
+            _topicOptions = topicOptions;
         }
 
-
-        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler)
+        public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            Register(callback, new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = DefaultMaxConcurrentCalls, AutoComplete = DefaultAutoComplete });
+            var processor = _serviceBusClient.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName, _topicOptions.ServiceBusProcessorOptions);
+
+            processor.ProcessMessageAsync += new MessageHandlerWrapper(_blobContainerClient, _topicOptions.TopicName).Handler(messageHandler);
+            processor.ProcessErrorAsync += errorHandler;
+
+            await processor.StartProcessingAsync();
         }
-
-        public void Register(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, MessageHandlerOptions handlerOptions)
-        {
-            _client.RegisterMessageHandler(HandlerWrapper(callback), handlerOptions);
-        }
-
-        private Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> HandlerWrapper(Func<Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback)
-        {
-            return async (message, ct) =>
-            {
-                if (message.UserProperties.ContainsKey(TopicConstants.BlobIdHeader))
-                {
-
-                    if (_blobContainerClient == null)
-                    {
-                        throw new InvalidOperationException("Received message with blob payload but receiver is not configured to use blobs");
-                    }
-
-                    var blobId = message.UserProperties[TopicConstants.BlobIdHeader];
-                    if (blobId is string blobName)
-                    {
-                        var blobClient = _blobContainerClient.GetBlobClient(BlobPath(blobName));
-                        var response = await blobClient.DownloadContentAsync(ct);
-                        if (response != null)
-                        {
-                            message.Body = response.Value.Content.ToArray();
-                        }
-
-                        await callback(message, ct);
-                        await blobClient.DeleteAsync(cancellationToken: ct);
-                    }
-                }
-                else
-                {
-                    await callback(message, ct);
-                }
-            };
-        }
-
-        private string BlobPath(string blobName) => $"{_topic}/{blobName}";
     }
 }

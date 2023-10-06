@@ -1,6 +1,6 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System;
 
 namespace laget.Azure.ServiceBus
 {
@@ -11,7 +11,6 @@ namespace laget.Azure.ServiceBus
         string Category { get; set; }
 
         DateTime CreatedAt { get; }
-        Microsoft.Azure.ServiceBus.Message Source { get; set; }
 
         string Serialize();
     }
@@ -28,8 +27,6 @@ namespace laget.Azure.ServiceBus
 
         [JsonProperty("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        [JsonProperty("source")]
-        public virtual Microsoft.Azure.ServiceBus.Message Source { get; set; }
 
         public virtual string Serialize() =>
             JsonConvert.SerializeObject(this, new JsonSerializerSettings

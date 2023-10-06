@@ -1,10 +1,8 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Extensions;
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
@@ -18,122 +16,100 @@ namespace laget.Azure.ServiceBus.Topic
         Task SendAsync(IEnumerable<string> messages);
         Task ScheduleAsync(string json, DateTimeOffset offset);
         Task Deschedule(long sequenceNumber);
-
-        void RegisterPlugin(ServiceBusPlugin plugin);
-        void UnregisterPlugin(ServiceBusPlugin plugin);
-        IEnumerable<ServiceBusPlugin> RegisteredPlugins();
     }
 
     public class TopicSender : ITopicSender
     {
-        private readonly ITopicClient _client;
         private readonly BlobContainerClient _blobContainerClient;
+        private readonly ServiceBusClient _serviceBusClient;
+        private readonly TopicOptions _topicOptions;
 
-        public TopicSender(string connectionString, TopicOptions options)
-            : this(new TopicClient(connectionString, options.TopicName, options.RetryPolicy), null)
+        public TopicSender(string connectionString, TopicOptions topicOptions)
+            : this(null, new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicSender(string connectionString, TopicOptions options, string blobConnectionString, string blobContainer)
-            : this(new TopicClient(connectionString, options.TopicName, options.RetryPolicy),
-                 new BlobContainerClient(blobConnectionString, blobContainer))
+        public TopicSender(string blobConnectionString, string blobContainer, string connectionString, TopicOptions topicOptions)
+            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, topicOptions.ServiceBusClientOptions), topicOptions)
         { }
 
-        public TopicSender(ITopicClient topicClient, BlobContainerClient blobContainerClient)
+        public TopicSender(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, TopicOptions topicOptions)
         {
-            _client = topicClient;
             _blobContainerClient = blobContainerClient;
             _blobContainerClient?.CreateIfNotExists();
+            _serviceBusClient = serviceBusClient;
+            _topicOptions = topicOptions;
         }
 
         public async Task SendAsync(IMessage message)
         {
-            await _client.SendAsync(await CreateMessage(message));
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+            var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
+
+            await sender.SendMessageAsync(msg);
+            await sender.DisposeAsync();
         }
 
         public async Task SendAsync(IEnumerable<IMessage> messages)
         {
-            var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
-
+            var queue = new Queue<ServiceBusMessage>();
             foreach (var message in messages)
-                sendList.Add(await CreateMessage(message));
+            {
+                queue.Enqueue(await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName));
+            }
 
-            await _client.SendAsync(sendList);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+
+            await sender.SendMessagesAsync(queue);
+            await sender.DisposeAsync();
         }
 
         public async Task ScheduleAsync(IMessage message, DateTimeOffset offset)
         {
-            await _client.ScheduleMessageAsync(await CreateMessage(message), offset);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+            var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
+
+            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.DisposeAsync();
         }
 
         public async Task SendAsync(string json)
         {
-            var bytes = Encoding.UTF8.GetBytes(json);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+            var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            var msg = await CreateMessage(bytes);
-            await _client.SendAsync(msg);
+            await sender.SendMessageAsync(msg);
+            await sender.DisposeAsync();
         }
 
         public async Task SendAsync(IEnumerable<string> messages)
         {
-            var sendList = new List<Microsoft.Azure.ServiceBus.Message>();
-
+            var queue = new Queue<ServiceBusMessage>();
             foreach (var message in messages)
-                sendList.Add(await CreateMessage(Encoding.UTF8.GetBytes(message)));
+            {
+                queue.Enqueue(await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName));
+            }
 
-            await _client.SendAsync(sendList);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+
+            await sender.SendMessagesAsync(queue);
+            await sender.DisposeAsync();
         }
 
         public async Task ScheduleAsync(string json, DateTimeOffset offset)
         {
-            var bytes = Encoding.UTF8.GetBytes(json);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+            var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            await _client.ScheduleMessageAsync(await CreateMessage(bytes), offset);
+            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.DisposeAsync();
         }
 
         public async Task Deschedule(long sequenceNumber)
         {
-            await _client.CancelScheduledMessageAsync(sequenceNumber);
+            var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
+
+            await sender.CancelScheduledMessageAsync(sequenceNumber);
+            await sender.DisposeAsync();
         }
-
-        public void RegisterPlugin(ServiceBusPlugin plugin)
-        {
-            _client.RegisterPlugin(plugin);
-        }
-
-        public void UnregisterPlugin(ServiceBusPlugin plugin)
-        {
-            _client.UnregisterPlugin(plugin.Name);
-        }
-
-        public IEnumerable<ServiceBusPlugin> RegisteredPlugins()
-        {
-            return _client.RegisteredPlugins;
-        }
-
-        private async Task<Microsoft.Azure.ServiceBus.Message> CreateMessage(byte[] body)
-        {
-            if (body.Length > TopicConstants.MaxMessageSize)
-            {
-                if (_blobContainerClient == null)
-                {
-                    throw new ArgumentException($"The body is too large, maximum size is ${TopicConstants.MaxMessageSize / 1024}KB");
-                }
-
-                var blobName = Guid.NewGuid().ToString();
-                await _blobContainerClient.UploadBlobAsync(BlobPath(blobName), new BinaryData(body));
-                var message = new Microsoft.Azure.ServiceBus.Message();
-                message.UserProperties.Add(TopicConstants.BlobIdHeader, blobName);
-                return message;
-            }
-
-            return new Microsoft.Azure.ServiceBus.Message(body);
-        }
-
-        private async Task<Microsoft.Azure.ServiceBus.Message> CreateMessage(IMessage message)
-        {
-            return await CreateMessage(message.GetBytes());
-        }
-
-        private string BlobPath(string blobName) => $"{_client.TopicName}/{blobName}";
     }
 }

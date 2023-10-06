@@ -1,31 +1,45 @@
-﻿using System;
-using System.Threading;
+﻿using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
+using laget.Azure.ServiceBus.Wrappers;
+using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
 
 namespace laget.Azure.ServiceBus.Queue
 {
     public interface IQueueReceiver
     {
-        void Register(Func<IQueueClient, Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null);
+        Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
     }
 
     public class QueueReceiver : IQueueReceiver
     {
-        private readonly IQueueClient _client;
+        private readonly BlobContainerClient _blobContainerClient;
+        private readonly ServiceBusClient _serviceBusClient;
+        private readonly QueueOptions _queueQueueOptions;
 
-        public QueueReceiver(string connectionString, QueueOptions options)
+        public QueueReceiver(string connectionString, QueueOptions queueOptions)
+            : this(null, new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
+        { }
+
+        public QueueReceiver(string blobConnectionString, string blobContainer, string connectionString, QueueOptions queueOptions)
+            : this(new BlobContainerClient(blobConnectionString, blobContainer), new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
+        { }
+
+        internal QueueReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
         {
-            _client = new QueueClient(connectionString, options.QueueName, options.ReceiveMode, options.RetryPolicy);
+            _blobContainerClient = blobContainerClient;
+            _serviceBusClient = serviceBusClient;
+            _queueQueueOptions = queueOptions;
         }
 
-
-        public void Register(Func<IQueueClient, Microsoft.Azure.ServiceBus.Message, CancellationToken, Task> callback, Func<ExceptionReceivedEventArgs, Task> exceptionHandler, MessageHandlerOptions handlerOptions = null)
+        public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
         {
-            if (handlerOptions == null)
-                handlerOptions = new MessageHandlerOptions(exceptionHandler) { MaxConcurrentCalls = 10, AutoComplete = true };
+            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
 
-            _client.RegisterMessageHandler((msg, ct) => callback(_client, msg, ct), handlerOptions);
+            processor.ProcessMessageAsync += new MessageHandlerWrapper(_blobContainerClient, _queueQueueOptions.QueueName).Handler(messageHandler);
+            processor.ProcessErrorAsync += errorHandler;
+
+            await processor.StartProcessingAsync();
         }
     }
 }
