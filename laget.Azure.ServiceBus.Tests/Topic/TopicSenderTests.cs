@@ -17,11 +17,11 @@ namespace laget.Azure.ServiceBus.Tests.Topic
         public async Task ShouldSendSmallContentInMessagePayload()
         {
             const string message = "{ \"key\": \"value\" }";
+            var topicOptions = new TopicOptions { SubscriptionName = "Subscription", TopicName = "Topic" };
 
             var blobContainerClient = new Mock<BlobContainerClient>();
             var serviceBusClient = new Mock<ServiceBusClient>();
             var serviceBusSender = new Mock<ServiceBusSender>();
-            var topicOptions = new TopicOptions { SubscriptionName = "Subscription", TopicName = "Topic" };
 
             serviceBusClient.Setup(x => x.CreateSender(topicOptions.TopicName)).Returns(serviceBusSender.Object);
 
@@ -39,11 +39,11 @@ namespace laget.Azure.ServiceBus.Tests.Topic
             var blobId = "";
             var blobPath = "";
             var message = new string('a', 256 * 1024);
+            var topicOptions = new TopicOptions { SubscriptionName = "Subscription", TopicName = "Topic" };
 
             var blobContainerClient = new Mock<BlobContainerClient>();
             var serviceBusClient = new Mock<ServiceBusClient>();
             var serviceBusSender = new Mock<ServiceBusSender>();
-            var topicOptions = new TopicOptions { SubscriptionName = "Subscription", TopicName = "Topic" };
 
             blobContainerClient.Setup(bc =>
                 bc.UploadBlobAsync(It.IsAny<string>(), It.IsAny<BinaryData>(), It.IsAny<CancellationToken>())).Callback(
