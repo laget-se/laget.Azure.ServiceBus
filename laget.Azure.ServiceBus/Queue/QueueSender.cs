@@ -2,17 +2,18 @@
 using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Extensions;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Queue
 {
     public interface IQueueSender
     {
-        Task SendAsync(IMessage message);
-        Task ScheduleAsync(IMessage message, DateTimeOffset offset);
-        Task SendAsync(string json);
-        Task ScheduleAsync(string json, DateTimeOffset offset);
-        Task Deschedule(long sequenceNumber);
+        Task SendAsync(IMessage message, CancellationToken cancellationToken = default);
+        Task ScheduleAsync(IMessage message, DateTimeOffset offset, CancellationToken cancellationToken = default);
+        Task SendAsync(string json, CancellationToken cancellationToken = default);
+        Task ScheduleAsync(string json, DateTimeOffset offset, CancellationToken cancellationToken = default);
+        Task Deschedule(long sequenceNumber, CancellationToken cancellationToken = default);
     }
 
     public class QueueSender : IQueueSender
@@ -37,47 +38,47 @@ namespace laget.Azure.ServiceBus.Queue
             _queueOptions = queueOptions;
         }
 
-        public async Task SendAsync(IMessage message)
+        public async Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_queueOptions.QueueName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
-            await sender.SendMessageAsync(msg);
+            await sender.SendMessageAsync(msg, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task ScheduleAsync(IMessage message, DateTimeOffset offset)
+        public async Task ScheduleAsync(IMessage message, DateTimeOffset offset, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_queueOptions.QueueName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
-            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.ScheduleMessageAsync(msg, offset, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task SendAsync(string json)
+        public async Task SendAsync(string json, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_queueOptions.QueueName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
-            await sender.SendMessageAsync(msg);
+            await sender.SendMessageAsync(msg, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task ScheduleAsync(string json, DateTimeOffset offset)
+        public async Task ScheduleAsync(string json, DateTimeOffset offset, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_queueOptions.QueueName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _queueOptions.QueueName);
 
-            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.ScheduleMessageAsync(msg, offset, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task Deschedule(long sequenceNumber)
+        public async Task Deschedule(long sequenceNumber, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_queueOptions.QueueName);
 
-            await sender.CancelScheduledMessageAsync(sequenceNumber);
+            await sender.CancelScheduledMessageAsync(sequenceNumber, cancellationToken);
             await sender.DisposeAsync();
         }
     }

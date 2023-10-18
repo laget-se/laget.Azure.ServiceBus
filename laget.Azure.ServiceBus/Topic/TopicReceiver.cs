@@ -2,13 +2,14 @@
 using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Wrappers;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicReceiver
     {
-        Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler);
+        Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, CancellationToken cancellationToken = default);
     }
 
     public class TopicReceiver : ITopicReceiver
@@ -32,14 +33,14 @@ namespace laget.Azure.ServiceBus.Topic
             _topicOptions = topicOptions;
         }
 
-        public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler)
+        public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, CancellationToken cancellationToken = default)
         {
             var processor = _serviceBusClient.CreateProcessor(_topicOptions.TopicName, _topicOptions.SubscriptionName, _topicOptions.ServiceBusProcessorOptions);
 
             processor.ProcessMessageAsync += new MessageHandlerWrapper(_blobContainerClient, _topicOptions.TopicName).Handler(messageHandler);
             processor.ProcessErrorAsync += errorHandler;
 
-            await processor.StartProcessingAsync();
+            await processor.StartProcessingAsync(cancellationToken);
         }
     }
 }

@@ -3,19 +3,20 @@ using Azure.Storage.Blobs;
 using laget.Azure.ServiceBus.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace laget.Azure.ServiceBus.Topic
 {
     public interface ITopicSender
     {
-        Task SendAsync(IMessage message);
-        Task SendAsync(IEnumerable<IMessage> messages);
-        Task ScheduleAsync(IMessage message, DateTimeOffset offset);
-        Task SendAsync(string json);
-        Task SendAsync(IEnumerable<string> messages);
-        Task ScheduleAsync(string json, DateTimeOffset offset);
-        Task Deschedule(long sequenceNumber);
+        Task SendAsync(IMessage message, CancellationToken cancellationToken = default);
+        Task SendAsync(IEnumerable<IMessage> messages, CancellationToken cancellationToken = default);
+        Task ScheduleAsync(IMessage message, DateTimeOffset offset, CancellationToken cancellationToken = default);
+        Task SendAsync(string json, CancellationToken cancellationToken = default);
+        Task SendAsync(IEnumerable<string> messages, CancellationToken cancellationToken = default);
+        Task ScheduleAsync(string json, DateTimeOffset offset, CancellationToken cancellationToken = default);
+        Task Deschedule(long sequenceNumber, CancellationToken cancellationToken = default);
     }
 
     public class TopicSender : ITopicSender
@@ -40,16 +41,16 @@ namespace laget.Azure.ServiceBus.Topic
             _topicOptions = topicOptions;
         }
 
-        public async Task SendAsync(IMessage message)
+        public async Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            await sender.SendMessageAsync(msg);
+            await sender.SendMessageAsync(msg, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task SendAsync(IEnumerable<IMessage> messages)
+        public async Task SendAsync(IEnumerable<IMessage> messages, CancellationToken cancellationToken = default)
         {
             var queue = new Queue<ServiceBusMessage>();
             foreach (var message in messages)
@@ -59,29 +60,29 @@ namespace laget.Azure.ServiceBus.Topic
 
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
 
-            await sender.SendMessagesAsync(queue);
+            await sender.SendMessagesAsync(queue, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task ScheduleAsync(IMessage message, DateTimeOffset offset)
+        public async Task ScheduleAsync(IMessage message, DateTimeOffset offset, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
             var msg = await message.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.ScheduleMessageAsync(msg, offset, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task SendAsync(string json)
+        public async Task SendAsync(string json, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            await sender.SendMessageAsync(msg);
+            await sender.SendMessageAsync(msg, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task SendAsync(IEnumerable<string> messages)
+        public async Task SendAsync(IEnumerable<string> messages, CancellationToken cancellationToken = default)
         {
             var queue = new Queue<ServiceBusMessage>();
             foreach (var message in messages)
@@ -91,24 +92,24 @@ namespace laget.Azure.ServiceBus.Topic
 
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
 
-            await sender.SendMessagesAsync(queue);
+            await sender.SendMessagesAsync(queue, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task ScheduleAsync(string json, DateTimeOffset offset)
+        public async Task ScheduleAsync(string json, DateTimeOffset offset, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
             var msg = await json.ToServiceBusMessageAsync(_blobContainerClient, _topicOptions.TopicName);
 
-            await sender.ScheduleMessageAsync(msg, offset);
+            await sender.ScheduleMessageAsync(msg, offset, cancellationToken);
             await sender.DisposeAsync();
         }
 
-        public async Task Deschedule(long sequenceNumber)
+        public async Task Deschedule(long sequenceNumber, CancellationToken cancellationToken = default)
         {
             var sender = _serviceBusClient.CreateSender(_topicOptions.TopicName);
 
-            await sender.CancelScheduledMessageAsync(sequenceNumber);
+            await sender.CancelScheduledMessageAsync(sequenceNumber, cancellationToken);
             await sender.DisposeAsync();
         }
     }
