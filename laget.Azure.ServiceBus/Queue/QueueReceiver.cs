@@ -17,10 +17,10 @@ namespace laget.Azure.ServiceBus.Queue
     public class QueueReceiver : IQueueReceiver
     {
         private readonly QueueOptions _queueQueueOptions;
+        private readonly BlobContainerClient _blobContainerClient;
+        private readonly ServiceBusClient _serviceBusClient;
 
-        internal static BlobContainerClient BlobContainerClient;
-        internal static ServiceBusClient ServiceBusClient;
-        internal static ServiceBusProcessor ServiceBusProcessor;
+        internal ServiceBusProcessor ServiceBusProcessor;
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions)
             : this(null, new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
@@ -32,16 +32,16 @@ namespace laget.Azure.ServiceBus.Queue
 
         internal QueueReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
         {
-            BlobContainerClient = blobContainerClient;
-            ServiceBusClient = serviceBusClient;
+            _blobContainerClient = blobContainerClient;
+            _serviceBusClient = serviceBusClient;
             _queueQueueOptions = queueOptions;
         }
 
         public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, CancellationToken cancellationToken = default)
         {
-            ServiceBusProcessor = ServiceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
+            ServiceBusProcessor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
 
-            ServiceBusProcessor.ProcessMessageAsync += new MessageHandlerWrapper(BlobContainerClient, _queueQueueOptions.QueueName).Handler(messageHandler);
+            ServiceBusProcessor.ProcessMessageAsync += new MessageHandlerWrapper(_blobContainerClient, _queueQueueOptions.QueueName).Handler(messageHandler);
             ServiceBusProcessor.ProcessErrorAsync += errorHandler;
 
             await ServiceBusProcessor.StartProcessingAsync(cancellationToken);
@@ -55,7 +55,7 @@ namespace laget.Azure.ServiceBus.Queue
         public async Task DisposeAsync()
         {
             await ServiceBusProcessor.DisposeAsync();
-            await ServiceBusClient.DisposeAsync();
+            await _serviceBusClient.DisposeAsync();
         }
     }
 }
