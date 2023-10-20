@@ -10,13 +10,17 @@ namespace laget.Azure.ServiceBus.Queue
     public interface IQueueReceiver
     {
         Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, CancellationToken cancellationToken = default);
+        Task StopAsync(CancellationToken cancellationToken = default);
+        Task DisposeAsync();
     }
 
     public class QueueReceiver : IQueueReceiver
     {
-        private readonly BlobContainerClient _blobContainerClient;
-        private readonly ServiceBusClient _serviceBusClient;
         private readonly QueueOptions _queueQueueOptions;
+
+        internal static BlobContainerClient BlobContainerClient;
+        internal static ServiceBusClient ServiceBusClient;
+        internal static ServiceBusProcessor ServiceBusProcessor;
 
         public QueueReceiver(string connectionString, QueueOptions queueOptions)
             : this(null, new ServiceBusClient(connectionString, queueOptions.ServiceBusClientOptions), queueOptions)
@@ -28,19 +32,30 @@ namespace laget.Azure.ServiceBus.Queue
 
         internal QueueReceiver(BlobContainerClient blobContainerClient, ServiceBusClient serviceBusClient, QueueOptions queueOptions)
         {
-            _blobContainerClient = blobContainerClient;
-            _serviceBusClient = serviceBusClient;
+            BlobContainerClient = blobContainerClient;
+            ServiceBusClient = serviceBusClient;
             _queueQueueOptions = queueOptions;
         }
 
         public async Task RegisterAsync(Func<ProcessMessageEventArgs, ServiceBusMessage, Task> messageHandler, Func<ProcessErrorEventArgs, Task> errorHandler, CancellationToken cancellationToken = default)
         {
-            var processor = _serviceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
+            ServiceBusProcessor = ServiceBusClient.CreateProcessor(_queueQueueOptions.QueueName, _queueQueueOptions.ServiceBusProcessorOptions);
 
-            processor.ProcessMessageAsync += new MessageHandlerWrapper(_blobContainerClient, _queueQueueOptions.QueueName).Handler(messageHandler);
-            processor.ProcessErrorAsync += errorHandler;
+            ServiceBusProcessor.ProcessMessageAsync += new MessageHandlerWrapper(BlobContainerClient, _queueQueueOptions.QueueName).Handler(messageHandler);
+            ServiceBusProcessor.ProcessErrorAsync += errorHandler;
 
-            await processor.StartProcessingAsync(cancellationToken);
+            await ServiceBusProcessor.StartProcessingAsync(cancellationToken);
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken = default)
+        {
+            await ServiceBusProcessor.StopProcessingAsync(cancellationToken);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await ServiceBusProcessor.DisposeAsync();
+            await ServiceBusClient.DisposeAsync();
         }
     }
 }
