@@ -60,7 +60,7 @@ public class SomeClass
 
 #### TopicReceiver
 ```c#
-public class SomeClass : IHostedService
+public class SomeClass : BackgroundService
 {
     readonly TopicReceiver _receiver;
 
@@ -75,14 +75,9 @@ public class SomeClass : IHostedService
             });
     }
 
-    public async Task StartAsync(CancellationToken ct)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await _receiver.RegisterAsync(MessageHandler, ErrorHandler);
-    }
-
-    public Task StopAsync(CancellationToken ct)
-    {
-        return Task.CompletedTask;
+        await _receiver.RegisterAsync(MessageHandler, ErrorHandler, cancellationToken);
     }
 
     private async Task MessageHandler(ProcessMessageEventArgs args, ServiceBusMessage message)
