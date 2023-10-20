@@ -75,7 +75,7 @@ public class SomeClass : BackgroundService
             });
     }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await _receiver.RegisterAsync(MessageHandler, ErrorHandler, cancellationToken);
     }
@@ -95,7 +95,7 @@ public class SomeClass : BackgroundService
 
 > We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
-public class SomeClass : IHostedService
+public class SomeClass : BackgroundService
 {
     readonly TopicReceiver _receiver;
 
@@ -112,14 +112,9 @@ public class SomeClass : IHostedService
             });
     }
 
-    public async Task StartAsync(CancellationToken ct)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await _receiver.RegisterAsync(MessageHandler, ErrorHandler);
-    }
-
-    public Task StopAsync(CancellationToken ct)
-    {
-        return Task.CompletedTask;
+        await _receiver.RegisterAsync(MessageHandler, ErrorHandler, cancellationToken);
     }
 
     private async Task MessageHandler(ProcessMessageEventArgs args, ServiceBusMessage message)
@@ -187,7 +182,7 @@ public class SomeClass
 
 #### QueueReceiver
 ```c#
-public class SomeClass : IHostedService
+public class SomeClass : BackgroundService
 {
     readonly QueueReceiver _receiver;
 
@@ -201,14 +196,9 @@ public class SomeClass : IHostedService
             });
     }
 
-    public async Task StartAsync(CancellationToken ct)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await _receiver.RegisterAsync(MessageHandler, ErrorHandler);
-    }
-
-    public Task StopAsync(CancellationToken ct)
-    {
-        return Task.CompletedTask;
+        await _receiver.RegisterAsync(MessageHandler, ErrorHandler, cancellationToken);
     }
 
     private async Task MessageHandler(ProcessMessageEventArgs args, ServiceBusMessage message)
@@ -226,7 +216,7 @@ public class SomeClass : IHostedService
 
 > We're supporting large messages by persisting the message data as `blob` in a `Azure Storage Account`.
 ```c#
-public class SomeClass : IHostedService
+public class SomeClass : BackgroundService
 {
     readonly QueueReceiver _receiver;
 
@@ -242,14 +232,9 @@ public class SomeClass : IHostedService
             });
     }
 
-    public async Task StartAsync(CancellationToken ct)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await _receiver.RegisterAsync(MessageHandler, ErrorHandler);
-    }
-
-    public Task StopAsync(CancellationToken ct)
-    {
-        return Task.CompletedTask;
+        await _receiver.RegisterAsync(MessageHandler, ErrorHandler, cancellationToken);
     }
 
     private async Task MessageHandler(ProcessMessageEventArgs args, ServiceBusMessage message)
