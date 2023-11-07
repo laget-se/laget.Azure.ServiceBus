@@ -17,17 +17,17 @@
     <dependencies>
       <group targetFramework="net6.0">
         <dependency id="Azure.Messaging.ServiceBus" version="7.16.2" />
-        <dependency id="Azure.Storage.Blobs" version="12.18.0" />
+        <dependency id="Azure.Storage.Blobs" version="12.19.0" />
         <dependency id="Newtonsoft.Json" version="13.0.3" />
       </group>
       <group targetFramework="netstandard2.1">
         <dependency id="Azure.Messaging.ServiceBus" version="7.16.2" />
-        <dependency id="Azure.Storage.Blobs" version="12.18.0" />
+        <dependency id="Azure.Storage.Blobs" version="12.19.0" />
         <dependency id="Newtonsoft.Json" version="13.0.3" />
       </group>
       <group targetFramework="netstandard2.0">
         <dependency id="Azure.Messaging.ServiceBus" version="7.16.2" />
-        <dependency id="Azure.Storage.Blobs" version="12.18.0" />
+        <dependency id="Azure.Storage.Blobs" version="12.19.0" />
         <dependency id="Newtonsoft.Json" version="13.0.3" />
       </group>
     </dependencies>
