@@ -1,15 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;netstandard2.1;netstandard2.0</TargetFrameworks>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <TargetFrameworks>net8.0;net6.0;netstandard2.1;netstandard2.0</TargetFrameworks>
     <NuspecProperties>version=$(Version)</NuspecProperties>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.16.2" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.0" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
