@@ -33,6 +33,6 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - run: dotnet restore
-    - run: dotnet build --configuration Release laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj
+    - run: dotnet build --configuration Release laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj -p:Version=${{vars.VERSION}}.${{github.run_number}}
     - run: dotnet pack --configuration Release laget.Azure.ServiceBus/laget.Azure.ServiceBus.csproj --no-build -p:Version=${{vars.VERSION}}.${{github.run_number}} -p:PackageVersion=${{vars.VERSION}}.${{github.run_number}} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -p:NuspecFile=laget.Azure.ServiceBus.nuspec
     - run: dotnet nuget push laget.Azure.ServiceBus/bin/Release/laget.Azure.ServiceBus.${{vars.VERSION}}.${{github.run_number}}.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
